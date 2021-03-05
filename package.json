@@ -2,7 +2,7 @@
   "name": "food-delivery-app",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "server": "nodemon server.js",
     "client": "npm start --prefix client",
@@ -25,6 +25,7 @@
     "express-validator": "^6.10.0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.11.18",
+    "multer": "^1.4.2",
     "nodemailer": "^6.5.0",
     "nodemailer-sendgrid-transport": "^0.2.0",
     "socket.io": "^3.1.2"
