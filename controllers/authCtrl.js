@@ -155,7 +155,7 @@ module.exports.login = (req, res, next) => {
       res.status(200).json({ message: "ログインに成功しました。", token });
     })
     .catch((error) => {
-      if (!err.statusCode) err.statusCode = 500;
+      if (!error.statusCode) error.statusCode = 500;
       next(err);
     });
 };

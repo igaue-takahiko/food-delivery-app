@@ -18,4 +18,6 @@ router.post(
   userCtrl.postAddress
 );
 
+router.get('/user', userCtrl.getLoggedInUser)
+
 module.exports = router;
