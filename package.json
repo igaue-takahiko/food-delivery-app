@@ -10,7 +10,14 @@
     "dev": "concurrently \" npm run server  \" \" npm run client \"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "online",
+    "food",
+    "delivery",
+    "app",
+    "webApp",
+    "order"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {

@@ -4,7 +4,7 @@ const Account = require("../models/accountModel");
 const verifyToken = (req, res) => {
   const authHeader = req.get("Authorization");
   if (!authHeader) {
-    const error = new Error("Not authenticated");
+    const error = new Error("Not authenticated.");
     error.statusCode = 401;
     throw error;
   }
@@ -13,9 +13,9 @@ const verifyToken = (req, res) => {
   let decodedToken;
   try {
     decodedToken = jwt.verify(token, "supersecretkey-foodWebApp");
-  } catch (err) {
-    err.statusCode = 500;
-    throw err;
+  } catch (error) {
+    error.statusCode = 500;
+    throw error;
   }
   if (!decodedToken) {
     const error = new Error("Not authenticated");
@@ -27,6 +27,7 @@ const verifyToken = (req, res) => {
 };
 
 module.exports.verifySeller = (req, res, next) => {
+  const accountId = verifyToken(req, res);
   Account.findById(accountId)
     .then((account) => {
       if (!account) {
@@ -42,31 +43,35 @@ module.exports.verifySeller = (req, res, next) => {
       req.loggedInUserId = accountId;
       next();
     })
-    .catch((err) => {
-      if (!err.statusCode) err.statusCode = 500;
-      next(err);
+    .catch((error) => {
+      if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      next(error);
     });
 };
 
 module.exports.verifyUser = (req, res, next) => {
-  const accountId = verifyToken(req, res)
-  Account.findById(accountId).then((account) => {
-    if (!account) {
-      const error = new Error("内部サーバーエラー");
+  const accountId = verifyToken(req, res);
+  Account.findById(accountId)
+    .then((account) => {
+      if (!account) {
+        const error = new Error("内部サーバーエラー");
         error.statusCode = 500;
         throw error;
-    }
-    if (account.role !== "ROLE_USER") {
-      const error = new Error("禁止されたアクセスです。");
-      error.statusCode = 403;
-      throw error;
-    }
-    req.loggedInUserId = accountId;
-    next();
-  }).catch((error) => {
-    if (!error.statusCode) {
-      error.statusCode = 500
-    }
-    next(error)
-  })
+      }
+      if (account.role !== "ROLE_USER") {
+        const error = new Error("禁止されたアクセスです。");
+        error.statusCode = 403;
+        throw error;
+      }
+      req.loggedInUserId = accountId;
+      next();
+    })
+    .catch((error) => {
+      if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      next(error);
+    });
 };

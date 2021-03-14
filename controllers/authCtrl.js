@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 
 const User = require("../models/userModel");
 const Account = require("../models/accountModel");
+const Seller = require('../models/sellerModel')
 
 const transporter = nodemailer.createTransport(
   sendgridTransport({
@@ -21,7 +22,7 @@ module.exports.signupUser = (req, res, next) => {
 
   if (!errors.isEmpty()) {
     const error = new Error(
-      "バリデーションに失敗しました。間違ったデータが入力されました。"
+      "Validation Failed, Incorrect data entered."
     );
     error.statusCode = 442;
     error.errors = errors.array();
@@ -156,7 +157,7 @@ module.exports.login = (req, res, next) => {
     })
     .catch((error) => {
       if (!error.statusCode) error.statusCode = 500;
-      next(err);
+      next(error);
     });
 };
 
@@ -165,7 +166,7 @@ module.exports.signupSeller = (req, res, next) => {
 
   if (!errors.isEmpty()) {
     const error = new Error(
-      "バリデーションに失敗しました。間違ったデータが入力されました。"
+      "Validation Failed, Incorrect data entered."
     );
     error.statusCode = 422;
     error.errors = errors.array();
@@ -173,7 +174,7 @@ module.exports.signupSeller = (req, res, next) => {
   }
 
   if (req.files.length === 0) {
-    const error = new Error("画像もアップロードしてください。");
+    const error = new Error("画像をアップロードしてください。");
     error.statusCode = 422;
     throw error;
   }
@@ -223,7 +224,7 @@ module.exports.signupSeller = (req, res, next) => {
       return account.save();
     })
     .then((savedAccount) => {
-      const seller = new Account({
+      const seller = new Seller({
         name,
         tags,
         imageUrl: arrayFiles,
@@ -231,7 +232,7 @@ module.exports.signupSeller = (req, res, next) => {
         costForOne,
         account: savedAccount,
         payment: paymentArray,
-        formattedAddress,
+        formattedAddress: formattedAddress,
         address: {
           street,
           zip,

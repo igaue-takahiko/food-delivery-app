@@ -8,9 +8,7 @@ router.post(
   "/user/address",
   auth.verifyUser,
   [
-    body("phoneNo", "有効な10桁の電話番号を入力してください。")
-      .trim()
-      .isLength({ min: 10, max: 10 }),
+    body("phoneNo", "電話番号の入力は必須です。").trim().not().isEmpty(),
     body("locality", "都道府県の入力は必須です。").trim().not().isEmpty(),
     body("zip", "郵便番号の入力は必須です。").trim().not().isEmpty(),
     body("street", "住所の入力は必須です。").trim().not().isEmpty(),
@@ -18,6 +16,14 @@ router.post(
   userCtrl.postAddress
 );
 
-router.get('/user', userCtrl.getLoggedInUser)
+router.get("/user", userCtrl.getLoggedInUser);
+
+router.get("/restaurants", userCtrl.getRestaurants);
+
+router.get("/restaurant/:restId", userCtrl.getRestaurant);
+
+router.get("/clients/connected", userCtrl.getConnectedClients);
+
+router.get("/restaurants-location/:lat/:lng", userCtrl.getRestaurantsByAddress);
 
 module.exports = router;

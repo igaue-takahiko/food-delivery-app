@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 
 const authRoutes = require("./routes/authRouter");
+const itemRoutes = require("./routes/itemRouter");
 const userRoutes = require("./routes/userRouter");
 
 const fileStorage = multer.diskStorage({
@@ -27,13 +28,13 @@ const fileFilter = (req, file, cb) => {
   ) {
     cb(null, true);
   } else {
-    cb(null, true);
+    cb(null, false);
   }
 };
 
 const app = express();
 
-const upload = multer({ storage: fileStorage, fileFilter });
+const upload = multer({ storage: fileStorage, fileFilter: fileFilter });
 
 app.use(bodyParser.json());
 app.use("/images", express.static(pash.join(__dirname, "images")));
@@ -50,6 +51,7 @@ app.use((req, res, next) => {
 
 //Routers
 app.use("/auth", upload.array("images", 10), authRoutes);
+app.use("/seller", upload.single("image"), itemRoutes);
 app.use(userRoutes);
 
 //error middleware

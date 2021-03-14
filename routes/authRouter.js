@@ -13,11 +13,9 @@ router.post(
     body("email", "有効なメールアドレスを入力してください。")
       .isEmail()
       .custom(async (value, { req }) => {
-        return Account.findOne({ email: value }).then((accountDoc) => {
+        return await Account.findOne({ email: value }).then((accountDoc) => {
           if (accountDoc) {
-            return Promise.reject(
-              "すでにそのメールアドレスは使われています。"
-            );
+            return Promise.reject("すでにそのメールアドレスは使われています。");
           }
         });
       })
@@ -45,12 +43,11 @@ router.post(
     body("email", "有効なメールアドレスを入力してください。")
       .isEmail()
       .custom(async (value, { req }) => {
-        const accountDoc = await Account.findOne({ email: value });
-        if (accountDoc) {
-          return Promise.reject(
-            "すでにそのメールアドレスは使われています。"
-          );
-        }
+        return await Account.findOne({ email: value }).then((accountDoc) => {
+          if (accountDoc) {
+            return Promise.reject("すでにそのメールアドレスは使われています。");
+          }
+        });
       })
       .normalizeEmail(),
     body("password", "パスワードは６文字以上の入力でお願いします。")
@@ -58,14 +55,11 @@ router.post(
       .isLength({ min: 6 }),
     body("name", "店舗名の入力は必須です。").trim().not().isEmpty(),
     body("payment", "支払いの入力は必須です。").trim().not().isEmpty(),
-    body("tags", "タグの入力は必須です。").trim().not().isEmpty(),
+    body("tags", "ジャンルの入力は必須です。").trim().not().isEmpty(),
     body("street", "住所の入力は必須です。").trim().not().isEmpty(),
     body("locality", "都道府県の入力は必須です。").trim().not().isEmpty(),
     body("zip", "郵便番号の入力は必須です。").trim().not().isEmpty(),
-    body("costForOne", "最低限、一人分の注文は必須です。")
-      .trim()
-      .not()
-      .isEmpty(),
+    body("costForOne", "コストの入力は必須です。").trim().not().isEmpty(),
     body("minOrderAmount", "最小注文額の注文は必須です。")
       .trim()
       .not()
@@ -78,9 +72,7 @@ router.post(
         }
         return true;
       }),
-    body("phoneNo", "有効な10桁の電話番号を入力してください。")
-      .trim()
-      .isLength({ min: 10, max: 10 }),
+    body("phoneNo", "電話番号の入力は必須です。").trim().not().isEmpty(),
   ],
   authCtrl.signupSeller
 );
