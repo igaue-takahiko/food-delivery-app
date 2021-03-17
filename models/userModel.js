@@ -67,8 +67,11 @@ userSchema.methods.addToCart = function (item) {
       quantity: newQuantity,
     });
   }
-  const updatedCart = { items: updatedCartItems };
-  this.cat = updatedCart;
+
+  const updatedCart = {
+    items: updatedCartItems,
+  };
+  this.cart = updatedCart;
   return this.save();
 };
 

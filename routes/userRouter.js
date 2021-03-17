@@ -16,6 +16,10 @@ router.post(
   userCtrl.postAddress
 );
 
+router.post("/cart", auth.verifyUser, userCtrl.postCart);
+
+router.get("/cart", auth.verifyUser, userCtrl.getCart);
+
 router.get("/user", userCtrl.getLoggedInUser);
 
 router.get("/restaurants", userCtrl.getRestaurants);

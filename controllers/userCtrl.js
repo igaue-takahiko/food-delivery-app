@@ -5,8 +5,64 @@ const mongoose = require("mongoose");
 const User = require("../models/userModel");
 const Account = require("../models/accountModel");
 const Seller = require("../models/sellerModel");
+const Item = require("../models/itemModel");
 const io = require("../utils/socket");
 const server = require("../server");
+
+module.exports.postCart = async (req, res, next) => {
+  const { itemId } = req.body;
+  if (!itemId) {
+    const error = new Error("ItemId not provided");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  let targetItem;
+  await Item.findById(itemId)
+    .then((item) => {
+      targetItem = item;
+      return Account.findById(req.loggedInUserId);
+    })
+    .then((account) => {
+      return User.findOne({ account: account._id });
+    })
+    .then((user) => {
+      return user.addToCart(targetItem);
+    })
+    .then((result) => {
+      res.status(200).json({ message: "商品がカートに正常に追加されました。" });
+    })
+    .catch((error) => {
+      if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      next(error);
+    });
+};
+
+module.exports.getCart = async (req, res, next) => {
+  await Account.findById(req.loggedInUserId)
+    .then((account) => {
+      return User.findOne({ account: account._id });
+    })
+    .then((user) => {
+      return user.populate("cart.items.itemId").execPopulate();
+    })
+    .then((user) => {
+      const cartItems = user.cart.items;
+      let totalPrice = 0;
+      cartItems.forEach((item) => {
+        totalPrice = totalPrice + item.quantity * item.itemId.price;
+      });
+      res.json({ cart: cartItems, totalPrice });
+    })
+    .catch((error) => {
+      if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      next(error);
+    });
+};
 
 module.exports.getRestaurants = (req, res, next) => {
   Seller.find()
@@ -47,9 +103,7 @@ module.exports.getRestaurant = (req, res, next) => {
 module.exports.postAddress = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    const error = new Error(
-      "Validation Failed, Incorrect data entered."
-    );
+    const error = new Error("Validation Failed, Incorrect data entered.");
     error.statusCode = 442;
     error.errors = errors.array();
     throw error;
@@ -150,7 +204,7 @@ module.exports.getLoggedInUser = async (req, res, next) => {
 };
 
 module.exports.getConnectedClients = (req, res, next) => {
-  res.json({ clients: app.clients });
+  res.json({ clients: server.clients });
 };
 
 module.exports.getRestaurantsByAddress = (req, res, next) => {
@@ -170,14 +224,17 @@ module.exports.getRestaurantsByAddress = (req, res, next) => {
         const lon2 = seller.address.lng;
 
         const R = 6371; // kms
-        const φ1 = (lat1 * Math.PI) / 180;
-        const φ2 = (lat2 * Math.PI) / 180;
-        const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-        const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+        const result1 = (lat1 * Math.PI) / 180;
+        const result2 = (lat2 * Math.PI) / 180;
+        const result3 = ((lat2 - lat1) * Math.PI) / 180;
+        const result4 = ((lon2 - lon1) * Math.PI) / 180;
 
         const a =
-          Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-          Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+          Math.sin(result3 / 2) * Math.sin(result3 / 2) +
+          Math.cos(result1) *
+            Math.cos(result2) *
+            Math.sin(result4 / 2) *
+            Math.sin(result4 / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         const d = R * c; // in km
@@ -193,7 +250,8 @@ module.exports.getRestaurantsByAddress = (req, res, next) => {
         restaurants: results,
         totalItems: results.length,
       });
-    }).catch((error) => {
+    })
+    .catch((error) => {
       if (!error.statusCode) {
         error.statusCode = 500;
       }
