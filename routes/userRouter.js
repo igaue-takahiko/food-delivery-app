@@ -18,6 +18,12 @@ router.post(
 
 router.post("/cart", auth.verifyUser, userCtrl.postCart);
 
+router.post(
+  "/remove-cart-item/:itemId",
+  auth.verifyUser,
+  userCtrl.postCartRemove
+);
+
 router.get("/cart", auth.verifyUser, userCtrl.getCart);
 
 router.get("/user", userCtrl.getLoggedInUser);

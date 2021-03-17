@@ -64,8 +64,34 @@ module.exports.getCart = async (req, res, next) => {
     });
 };
 
-module.exports.getRestaurants = (req, res, next) => {
-  Seller.find()
+module.exports.postCartRemove = async (req, res, next) => {
+  const { itemId } = req.params;
+  if (!itemId) {
+    const error = new Error("ItemId not provided");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  await Account.findById(req.loggedInUserId)
+    .then((account) => {
+      return User.findOne({ account: account._id });
+    })
+    .then((user) => {
+      return user.removeFromCart(itemId);
+    })
+    .then((result) => {
+      res.status(200).json({ message: "商品が正常に減らされました。" });
+    })
+    .catch((error) => {
+      if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      next(error);
+    });
+};
+
+module.exports.getRestaurants = async (req, res, next) => {
+  await Seller.find()
     .populate("account", "isVerified")
     .sort({ createdAt: -1 })
     .then((sellers) => {
@@ -85,9 +111,9 @@ module.exports.getRestaurants = (req, res, next) => {
     });
 };
 
-module.exports.getRestaurant = (req, res, next) => {
+module.exports.getRestaurant = async (req, res, next) => {
   const { restId } = req.params;
-  Seller.findById(restId)
+  await Seller.findById(restId)
     .populate("items")
     .then((restaurant) => {
       res.json({ result: restaurant });
@@ -170,7 +196,7 @@ module.exports.getLoggedInUser = async (req, res, next) => {
   let accountObj;
   let sellerObj;
 
-  Account.findById(accountId)
+  await Account.findById(accountId)
     .then((account) => {
       if (!account) {
         const error = new Error("Internal server error");
@@ -207,11 +233,11 @@ module.exports.getConnectedClients = (req, res, next) => {
   res.json({ clients: server.clients });
 };
 
-module.exports.getRestaurantsByAddress = (req, res, next) => {
+module.exports.getRestaurantsByAddress = async (req, res, next) => {
   const lat1 = req.params.lat;
   const lon1 = req.params.lng;
 
-  Seller.find()
+  await Seller.find()
     .populate("account", "isVerified")
     .sort({ createdAt: -1 })
     .then((sellers) => {
