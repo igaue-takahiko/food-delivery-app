@@ -24,6 +24,8 @@ router.post(
   userCtrl.postCartRemove
 );
 
+router.post("/delete-cart-item", auth.verifyUser, userCtrl.postCartDelete);
+
 router.get("/cart", auth.verifyUser, userCtrl.getCart);
 
 router.get("/user", userCtrl.getLoggedInUser);

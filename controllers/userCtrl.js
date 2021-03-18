@@ -77,10 +77,36 @@ module.exports.postCartRemove = async (req, res, next) => {
       return User.findOne({ account: account._id });
     })
     .then((user) => {
+      return user.reduceQuantity(itemId);
+    })
+    .then((result) => {
+      res.status(200).json({ message: "商品が正常に更新されました。" });
+    })
+    .catch((error) => {
+      if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      next(error);
+    });
+};
+
+module.exports.postCartDelete = async (req, res, next) => {
+  const { itemId } = req.body;
+  if (!itemId) {
+    const error = new Error("ItemId not provided");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  await Account.findById(req.loggedInUserId)
+    .then((account) => {
+      return User.findOne({ account: account._id });
+    })
+    .then((user) => {
       return user.removeFromCart(itemId);
     })
     .then((result) => {
-      res.status(200).json({ message: "商品が正常に減らされました。" });
+      res.status(200).json({ message: "商品は正常に削除されました。" });
     })
     .catch((error) => {
       if (!error.statusCode) {
