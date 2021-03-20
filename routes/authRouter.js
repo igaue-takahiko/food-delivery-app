@@ -59,7 +59,7 @@ router.post(
     body("street", "住所の入力は必須です。").trim().not().isEmpty(),
     body("locality", "都道府県の入力は必須です。").trim().not().isEmpty(),
     body("zip", "郵便番号の入力は必須です。").trim().not().isEmpty(),
-    body("costForOne", "コストの入力は必須です。").trim().not().isEmpty(),
+    body("costForOne", "受注できる人数の入力は必須です。").trim().not().isEmpty(),
     body("minOrderAmount", "最小注文額の注文は必須です。")
       .trim()
       .not()

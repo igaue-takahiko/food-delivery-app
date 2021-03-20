@@ -2,6 +2,7 @@ const pash = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const cors = require("cors");
 const multer = require("multer");
 
 const authRoutes = require("./routes/authRouter");
@@ -39,15 +40,7 @@ const upload = multer({ storage: fileStorage, fileFilter: fileFilter });
 app.use(bodyParser.json());
 app.use("/images", express.static(pash.join(__dirname, "images")));
 
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, PATCH, DELETE"
-  );
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  next();
-});
+app.use(cors())
 
 //Routers
 app.use("/auth", upload.array("images", 10), authRoutes);

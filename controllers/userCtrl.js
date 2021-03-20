@@ -6,6 +6,7 @@ const User = require("../models/userModel");
 const Account = require("../models/accountModel");
 const Seller = require("../models/sellerModel");
 const Item = require("../models/itemModel");
+const Order = require("../models/orderModel");
 const io = require("../utils/socket");
 const server = require("../server");
 
@@ -172,6 +173,9 @@ module.exports.postAddress = (req, res, next) => {
     formattedAddress,
   } = req.body;
   Account.findById(req.loggedInUserId)
+    .then((account) => {
+      return User.findOne({ account: account._id });
+    })
     .then((user) => {
       return User.findByIdAndUpdate(
         { _id: user._id },
@@ -192,6 +196,185 @@ module.exports.postAddress = (req, res, next) => {
     })
     .then((result) => {
       res.json({ item: result });
+    });
+};
+
+module.exports.postOrder = async (req, res, next) => {
+  let accountObj;
+  let userObj;
+  await Account.findById(req.loggedInUserId)
+    .then((account) => {
+      accountObj = account;
+      return User.findOne({ account: account._id });
+    })
+    .then((user) => {
+      userObj = user;
+      return user.populate("cart.items.itemId").execPopulate();
+    })
+    .then((result) => {
+      const sellers = result.cart.items.reduce((acc, item) => {
+        if (!acc[item.itemId.creator]) {
+          acc[item.itemId.creator] = [];
+        }
+
+        acc[item.itemId.creator].push(item);
+        return acc;
+      }, {});
+
+      for (let [seller, cartItem] of Object.entries(sellers)) {
+        Seller.findById(seller).then((seller) => {
+          const items = cartItem.map((i) => {
+            return { quantity: i.quantity, item: { ...i.itemId._doc } };
+          });
+
+          const order = new Order({
+            user: {
+              email: accountObj.email,
+              name: result.firstName,
+              address: result.address,
+              userId: result,
+            },
+            items,
+            status: "受注する",
+            seller: {
+              name: seller.name,
+              phone: seller.address.phoneNo,
+              sellerId: seller,
+            },
+          });
+
+          order.save();
+          for (const clientId of Object.keys(server.clients)) {
+            if (clientId.toString() === seller._id.toString()) {
+              io.getIo().sockets.connected[
+                server.clients[clientId].socket
+              ].emit("orders", { action: "create", order });
+            }
+          }
+        });
+      }
+      return result;
+    })
+    .then((result) => {
+      return userObj.clearCart();
+    })
+    .then((result) => {
+      res.status(200).json({ result });
+    })
+    .catch((error) => {
+      if (error.statusCode) {
+        error.statusCode = 500;
+      }
+      next(error);
+    });
+};
+
+module.exports.getOrders = async (req, res, next) => {
+  const authHeader = req.get("Authorization");
+  if (!authHeader) {
+    const error = new Error("Not authenticated.");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const token = authHeader.split(" ")[1];
+  let decodedToken;
+  try {
+    decodedToken = jwt.verify(token, "supersecretkey-foodWebApp");
+  } catch (error) {
+    error.statusCode = 500;
+    throw error;
+  }
+
+  const accountId = decodedToken.accountId;
+
+  await Account.findById(accountId)
+    .then((account) => {
+      if (account.role === "ROLE_USER") {
+        return User.findOne({ account: account._id });
+      }
+
+      if (account.role === "ROLE_SELLER") {
+        return Seller.findOne({ account: account._id });
+      }
+    })
+    .then((result) => {
+      if (result instanceof User) {
+        return Order.find({ "user.userId": result._id }).sort({
+          createdAt: -1,
+        });
+      }
+
+      if (result instanceof Seller) {
+        return Order.find({ "seller.sellerId": result._id }).sort({
+          createdAt: -1,
+        });
+      }
+    })
+    .then((orders) => {
+      res.status(200).json({ orders });
+    })
+    .catch((error) => {
+      if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      next(error);
+    });
+};
+
+module.exports.postOrderStatus = async (req, res, next) => {
+  const authHeader = req.get("Authorization");
+  if (!authHeader) {
+    const error = new Error("Not authenticated.");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const token = authHeader.split(" ")[1];
+  let decodedToken;
+  try {
+    decodedToken = jwt.verify(token, "supersecretkey-foodWebApp");
+  } catch (error) {
+    error.statusCode = 500;
+    throw error;
+  }
+
+  if (!decodedToken) {
+    const error = new Error("Not authenticated");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const { orderId } = req.params;
+  if (!req.body.status) {
+    const error = new Error("Status Not Provided.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const { status } = req.body;
+  await Order.findById(orderId)
+    .then((order) => {
+      if (!order) {
+        const error = new Error(
+          "Could not find any Order with the given orderId."
+        );
+        error.statusCode = 404;
+        throw error;
+      }
+
+      order.status = status;
+      return order.save();
+    })
+    .then((updatedOrder) => {
+      io.getIo().emit("orders", { action: "update", order: updatedOrder });
+      res.status(200).json({ updatedOrder });
+    })
+    .catch((error) => {
+      if (!error.statusCode) {
+        error.statusCode = 500;
+      }
+      next(error);
     });
 };
 
@@ -220,7 +403,6 @@ module.exports.getLoggedInUser = async (req, res, next) => {
 
   const accountId = decodedToken.accountId;
   let accountObj;
-  let sellerObj;
 
   await Account.findById(accountId)
     .then((account) => {

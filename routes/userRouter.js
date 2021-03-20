@@ -26,9 +26,15 @@ router.post(
 
 router.post("/delete-cart-item", auth.verifyUser, userCtrl.postCartDelete);
 
+router.post("/order", auth.verifyUser, userCtrl.postOrder);
+
+router.post("/order-status/:orderId", userCtrl.postOrderStatus);
+
 router.get("/cart", auth.verifyUser, userCtrl.getCart);
 
 router.get("/user", userCtrl.getLoggedInUser);
+
+router.get("/orders", userCtrl.getOrders);
 
 router.get("/restaurants", userCtrl.getRestaurants);
 
