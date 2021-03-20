@@ -230,7 +230,7 @@ module.exports.postOrder = async (req, res, next) => {
           const order = new Order({
             user: {
               email: accountObj.email,
-              name: result.firstName,
+              name: result.lastName,
               address: result.address,
               userId: result,
             },
